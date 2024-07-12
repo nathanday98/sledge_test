@@ -1,0 +1,313 @@
+﻿using Raylib_cs;
+using Sledge.Formats;
+using Sledge.Formats.Map.Formats;
+using System.Numerics;
+
+using static Raylib_cs.Raylib;
+
+namespace sledge_test
+{
+	internal class Program
+	{
+		static Vector3 from_map(Vector3 v)
+		{
+			return new Vector3(v.X, v.Z, v.Y);
+			//return v;
+		}
+
+		struct UVText
+		{
+			public float u, v;
+			public Vector2 draw_pos;
+		}
+
+		static unsafe void Main(string[] args)
+		{
+			var format = new QuakeMapFormat();
+			var map = format.ReadFromFile("C:\\dev\\dngn\\source_data\\test_valve.map");
+			var world_spawn = map.Worldspawn;
+
+			InitWindow(1920, 1080, "Hello World");
+			SetTargetFPS(60);
+			SetExitKey(0);
+
+			Camera3D camera = new Camera3D(new Vector3(10.0f, 196.0f, 10.0f), Vector3.Zero, new Vector3(0.0f, 1.0f, 0.0f), 45.0f, CameraProjection.Perspective);
+
+			int texture_width = 64;
+			int texture_height = 64;
+
+			Span<Vector3> dirs = stackalloc Vector3[4];
+
+			Span<int> mins = stackalloc int[dirs.Length];
+			Span<int> maxs = stackalloc int[dirs.Length];
+
+			List<UVText> uv_texts = new List<UVText>();
+
+
+			while (!WindowShouldClose())
+			{
+
+				uv_texts.Clear();
+				if (IsKeyDown(KeyboardKey.F4) && IsKeyDown(KeyboardKey.LeftAlt))
+				{
+					CloseWindow();
+				}
+
+				if (IsCursorHidden())
+				{
+					UpdateCamera(ref camera, CameraMode.Free);
+				}
+
+				// Toggle camera controls
+				if (IsMouseButtonPressed(MouseButton.Left) && !IsCursorHidden())
+				{
+					DisableCursor();
+				}
+
+				if (IsKeyPressed(KeyboardKey.Escape) && IsCursorHidden())
+				{
+					EnableCursor();
+				}
+
+				BeginDrawing();
+				{
+					ClearBackground(Color.White);
+
+					BeginMode3D(camera);
+					{
+						DrawGrid(10, 1.0f);
+
+						foreach (var child in world_spawn.Children)
+						{
+							if(child is Sledge.Formats.Map.Objects.Solid solid)
+							{
+								int face_index = 0;
+								foreach (var face in solid.Faces)
+								{
+									//if (face_index != 0)
+									//{
+									//	face_index++;
+									//	continue;
+									//}
+
+									var plane_normal = from_map(face.Plane.Normal);
+									var plane_point = from_map(face.Plane.GetPointOnPlane());
+									var plane_right = from_map((face.OriginalPlaneVertices[1] - face.OriginalPlaneVertices[0]).Normalise().ToVector3());
+									var plane_up = plane_normal.Cross(plane_right).Normalise();
+
+									//DrawSphere(plane_point, 1.0f, Color.Black);
+									//DrawLine3D(plane_point, plane_point + plane_normal * 10.0f, Color.Magenta);
+
+									var average_point = Vector3.Zero;
+
+									for (int i = 0; i < face.Vertices.Count; i++)
+									{
+										average_point += from_map(face.Vertices[i]);
+									}
+
+									average_point /= face.Vertices.Count;
+
+									DrawSphere(average_point, 1.0f, Color.Black);
+									DrawLine3D(average_point, average_point + plane_normal * 10.0f, Color.Magenta);
+									DrawLine3D(average_point, average_point + plane_right * 10.0f, Color.SkyBlue);
+									DrawLine3D(average_point, average_point + plane_up * 10.0f, Color.Green);
+
+									var u_axis = from_map(face.UAxis);
+									var v_axis = from_map(face.VAxis);
+
+									var rotation_axis = plane_normal;
+
+									//var quat = Quaternion.CreateFromAxisAngle(rotation_axis, face.Rotation * MathF.PI / 180);
+									var quat = Quaternion.Identity;
+
+
+
+									dirs[0] = plane_right;
+									dirs[1] = plane_up;
+									dirs[2] = -plane_right;
+									dirs[3] = -plane_up;
+
+									// I think I can do a lot of this with an x and y coordinate which are the projections along the plane_right and plane_up.
+									// I can then effectively work out the rotated bounds in 2d, I would just need to then convert them back to 3d for conversion to proper UVs.
+
+									for (int result_index = 0; result_index < dirs.Length; result_index++)
+									{
+										float min_proj = float.MaxValue;
+										float max_proj = float.MinValue;
+										for (int i = 0; i < face.Vertices.Count; i++)
+										{
+											Vector3 point = Vector3.Transform(from_map(face.Vertices[i]) - plane_point, -quat);
+											//DrawSphere(point, 1.0f, Color.Magenta);
+											//DrawLine3D(point, average_point, Color.Magenta);
+											float proj = point.Dot(dirs[result_index]);
+											if (proj < min_proj)
+											{
+												min_proj = proj;
+												mins[result_index] = i;
+											}
+
+											if (proj > max_proj)
+											{
+												max_proj = proj;
+												maxs[result_index] = i;
+											}
+										}
+									}
+
+									Vector3 aabb_min = Vector3.Transform(from_map(face.Vertices[mins[0]]) - plane_point, -quat);
+									Vector3 aabb_max = Vector3.Transform(from_map(face.Vertices[maxs[0]]) - plane_point, -quat);
+
+									for (int result_index = 1; result_index < dirs.Length; result_index++)
+									{
+										Vector3 min_point = Vector3.Transform(from_map(face.Vertices[mins[result_index]]) - plane_point, -quat);
+										Vector3 max_point = Vector3.Transform(from_map(face.Vertices[maxs[result_index]]) - plane_point, -quat);
+
+										if (min_point.X < aabb_min.X)
+										{
+											aabb_min.X = min_point.X;
+										}
+
+										if (min_point.Y < aabb_min.Y)
+										{
+											aabb_min.Y = min_point.Y;
+										}
+
+										if (min_point.Z < aabb_min.Z)
+										{
+											aabb_min.Z = min_point.Z;
+										}
+
+										if (max_point.X > aabb_max.X)
+										{
+											aabb_max.X = max_point.X;
+										}
+
+										if (max_point.Y > aabb_max.Y)
+										{
+											aabb_max.Y = max_point.Y;
+										}
+
+										if (max_point.Z > aabb_max.Z)
+										{
+											aabb_max.Z = max_point.Z;
+										}
+									}
+
+									Vector3 texture_offset = (u_axis * (face.XShift % (float)texture_width) + (v_axis * (face.YShift % (float)texture_height)));
+
+									Vector3 aabb_center = plane_point + (aabb_max + aabb_min) * 0.5f;
+									Vector3 aabb_size = (aabb_max - aabb_min) /*+ texture_offset*/;
+
+									Raylib_cs.Rlgl.PushMatrix();
+									//Raylib_cs.Rlgl.Rotatef(face.Rotation, rotation_axis.X, rotation_axis.Y, rotation_axis.Z);
+
+									if (face_index == 0)
+									{
+										DrawCubeWiresV(aabb_center, aabb_size, Color.Magenta);
+									}
+									Vector3 texture_size = (u_axis * texture_width * face.XScale + v_axis * texture_height * face.YScale);
+									
+									Vector3 aabb_div = Vector3.Zero;
+										// Make minimum 1 so the loops below have at least one iteration
+									Vector3 aabb_div_rounded = Vector3.One;
+									for(int i = 0; i < 3; i++)
+									{
+										float t = texture_size[i];
+										if(t == 0.0f)
+										{
+											continue;
+										}
+
+										float num = Math.Abs(aabb_size[i] / texture_size[i]);
+										aabb_div[i] = num;
+										float rounded_num = MathF.Ceiling(num);
+										if(rounded_num % 2 != 0)
+										{
+											rounded_num += 1;
+										}
+										aabb_div_rounded[i] = rounded_num;
+									}
+
+									Vector3 padded_aabb_size = aabb_div_rounded * texture_size;
+									//DrawCubeWiresV(aabb_center, padded_aabb_size, Color.DarkPurple);
+									//if (face_index == 4)
+									{
+										for (int x = 0; x < (int)aabb_div_rounded.X; x++)
+										{
+											for (int y = 0; y < (int)aabb_div_rounded.Y; y++)
+											{
+												for (int z = 0; z < (int)aabb_div_rounded.Z; z++)
+												{
+													Vector3 local_offset = new Vector3(x, y, z) * texture_size;
+													Vector3 position = aabb_center - (padded_aabb_size * 0.5f) + local_offset - texture_offset;
+													//DrawCubeWiresV(position + texture_size * 0.5f, texture_size, Color.Lime);
+												}
+
+											}
+
+										}
+									}
+
+
+									//Raylib_cs.Rlgl.Rotatef(-face.Rotation, rotation_axis.X, rotation_axis.Y, rotation_axis.Z);
+									Raylib_cs.Rlgl.PopMatrix();
+
+									//DrawSphere(Vector3.Transform(aabb_min, quat), 1.0f, Color.Magenta);
+									//DrawSphere(Vector3.Transform(aabb_max, quat), 1.0f, Color.Magenta);
+									//DrawLine3D(Vector3.Transform(aabb_min, quat), Vector3.Transform(aabb_max, quat), Color.Magenta);
+
+									//DrawSphere(Vector3.Transform(aabb_min, quat), 1.0f, Color.Magenta);
+									//DrawLine3D(Vector3.Transform(aabb_min, quat), average_point, Color.Magenta);
+
+									//DrawSphere(Vector3.Transform(aabb_max, quat), 1.0f, Color.Magenta);
+									//DrawLine3D(Vector3.Transform(aabb_max, quat), average_point, Color.Magenta);
+
+
+									//u_axis = Vector3.Transform(u_axis, quat);
+									//v_axis = Vector3.Transform(v_axis, quat);
+
+									//DrawCapsuleWires(average_point, average_point + u_axis * 5.0f, 1.0f, 10, 10, Color.Red);
+									//DrawCapsuleWires(average_point, average_point + v_axis * 5.0f, 1.0f, 10, 10, Color.Green);
+									//DrawCapsuleWires(average_point, average_point + rotation_axis * 5.0f, 1.0f, 10, 10, Color.Blue);
+
+									Vector3 new_u_axis = from_map(face.UAxis) / face.XScale;
+									Vector3 new_v_axis = from_map(face.VAxis) / face.YScale;
+
+									var previous_point = from_map(face.Vertices[0]);
+									var start_point = previous_point;
+									for (int i = 1; i < face.Vertices.Count; i++)
+									{
+										var point = from_map(face.Vertices[i]);
+										DrawLine3D(previous_point, point, Color.Red);
+										previous_point = point;
+										float u = point.Dot(new_u_axis);
+										float v = point.Dot(new_v_axis);
+										u += face.XShift;
+										v += face.YShift;
+										//u /= (float)texture_width;
+										//v /= (float)texture_height;
+										if (face_index == 3)
+										{
+											uv_texts.Add(new UVText() { u = u, v = v, draw_pos = GetWorldToScreen(point, camera) });
+										}
+
+									}
+									DrawLine3D(previous_point, start_point, Color.Red);
+									face_index++;
+								}
+							}
+						}
+					}
+					EndMode3D();
+					foreach(UVText text in uv_texts)
+					{
+						DrawText($"{text.u}, {text.v}", (int)text.draw_pos.X, (int)text.draw_pos.Y, 20, Color.Black);
+					}
+				}
+				EndDrawing();
+			}
+
+			CloseWindow();
+		}
+	}
+}
