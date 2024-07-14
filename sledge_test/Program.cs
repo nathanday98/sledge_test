@@ -1,6 +1,7 @@
 ﻿using Raylib_cs;
 using Sledge.Formats;
 using Sledge.Formats.Map.Formats;
+using System.Diagnostics;
 using System.Numerics;
 
 using static Raylib_cs.Raylib;
@@ -157,6 +158,15 @@ namespace sledge_test
 									Vector3 aabb_min = Vector3.Transform(from_map(face.Vertices[mins[0]]) - plane_point, -quat);
 									Vector3 aabb_max = Vector3.Transform(from_map(face.Vertices[maxs[0]]) - plane_point, -quat);
 
+									foreach(var point in face.Vertices)
+									{
+										Vector3 without_plane_rotation = from_map(point) - average_point;
+										float plane_space_x = without_plane_rotation.Dot(plane_right);
+										float plane_space_y = without_plane_rotation.Dot(plane_up);
+
+										//DrawLine3D(average_point, average_point + plane_right * plane_space_x + plane_up * plane_space_y, Color.Orange);
+									}
+
 									for (int result_index = 1; result_index < dirs.Length; result_index++)
 									{
 										Vector3 min_point = Vector3.Transform(from_map(face.Vertices[mins[result_index]]) - plane_point, -quat);
@@ -203,7 +213,7 @@ namespace sledge_test
 
 									if (face_index == 0)
 									{
-										DrawCubeWiresV(aabb_center, aabb_size, Color.Magenta);
+										//DrawCubeWiresV(aabb_center, aabb_size, Color.Magenta);
 									}
 									Vector3 texture_size = (u_axis * texture_width * face.XScale + v_axis * texture_height * face.YScale);
 									
@@ -270,6 +280,28 @@ namespace sledge_test
 									//DrawCapsuleWires(average_point, average_point + v_axis * 5.0f, 1.0f, 10, 10, Color.Green);
 									//DrawCapsuleWires(average_point, average_point + rotation_axis * 5.0f, 1.0f, 10, 10, Color.Blue);
 
+									Vector3 texture_space_right = from_map(face.UAxis).Normalise();
+									Vector3 texture_space_up = from_map(face.VAxis).Normalise();
+									Vector3 texture_space_forward = texture_space_up.Cross(texture_space_right).Normalise();
+
+									Matrix4x4 texture_space_basis = new Matrix4x4(
+										texture_space_right.X, texture_space_up.X, texture_space_forward.X, 0,
+										texture_space_right.Y, texture_space_up.Y, texture_space_forward.Y, 0,
+										texture_space_right.Z, texture_space_up.Z, texture_space_forward.Z, 0,
+										0, 0, 0, 1
+									);
+
+									Matrix4x4 model_to_texture_space = texture_space_basis * Matrix4x4.CreateScale(1.0f / face.XScale, 1.0f / face.YScale, 1.0f) * Matrix4x4.CreateTranslation(face.XShift, face.YShift, 0.0f);
+
+									Matrix4x4 texture_space_to_model = Matrix4x4.CreateTranslation(-face.XShift, -face.YShift, 0.0f) * Matrix4x4.CreateScale(face.XScale, face.YScale, 1.0f) * Matrix4x4.Transpose(texture_space_basis);
+
+
+									//Matrix4x4 texture_space_to_model = Matrix4x4.CreateTranslation(-face.XShift, -face.YShift, 0) * Matrix4x4.Transpose(texture_space_basis);
+									//Matrix4x4 texture_space_to_model = Matrix4x4.Identity;
+									//Debug.Assert(Matrix4x4.Invert(model_to_texture_space, out texture_space_to_model));
+
+									//if (face_index == 0)
+									{
 									Vector3 new_u_axis = from_map(face.UAxis) / face.XScale;
 									Vector3 new_v_axis = from_map(face.VAxis) / face.YScale;
 
@@ -286,13 +318,66 @@ namespace sledge_test
 										v += face.YShift;
 										//u /= (float)texture_width;
 										//v /= (float)texture_height;
-										if (face_index == 3)
+										//if (face_index == 3)
 										{
 											uv_texts.Add(new UVText() { u = u, v = v, draw_pos = GetWorldToScreen(point, camera) });
 										}
 
+										var texture_space_point = model_to_texture_space.Transform(point);
+
+										//Debug.Assert(u == texture_space_point.X);
+										//Debug.Assert(v == texture_space_point.Y);
+
+										var model_space_point = texture_space_to_model.Transform(texture_space_point);
+
+										//Debug.Assert(model_space_point == point);
+
 									}
 									DrawLine3D(previous_point, start_point, Color.Red);
+
+
+
+									Vector2 texture_aabb_min = new Vector2(float.MaxValue, float.MaxValue);
+									Vector2 texture_aabb_max = new Vector2(-float.MaxValue, -float.MaxValue);
+									foreach (var point_raw in face.Vertices)
+									{
+										var point = from_map(point_raw);
+
+										var texture_space_point = model_to_texture_space.Transform(point);
+
+										if (texture_space_point.X < texture_aabb_min.X)
+										{
+											texture_aabb_min.X = texture_space_point.X;
+										}
+
+										if (texture_space_point.Y < texture_aabb_min.Y)
+										{
+											texture_aabb_min.Y = texture_space_point.Y;
+										}
+
+										if (texture_space_point.X > texture_aabb_max.X)
+										{
+											texture_aabb_max.X = texture_space_point.X;
+										}
+
+										if (texture_space_point.Y > texture_aabb_max.Y)
+										{
+											texture_aabb_max.Y = texture_space_point.Y;
+										}
+									}
+
+									Func<float, float, Vector3> convert = (x, y) => texture_space_to_model.Transform(new Vector3(x, y, 0.0f));
+
+
+										Vector3 bottom_left = convert(texture_aabb_min.X, texture_aabb_min.Y);
+										Vector3 top_left = convert(texture_aabb_min.X, texture_aabb_max.Y);
+										Vector3 top_right = convert(texture_aabb_max.X, texture_aabb_max.Y);
+										Vector3 bottom_right = convert(texture_aabb_max.X, texture_aabb_min.Y);
+										DrawLine3D(bottom_left, top_left, Color.Magenta);
+										DrawLine3D(top_left, top_right, Color.Magenta);
+										DrawLine3D(top_right, bottom_right, Color.Magenta);
+										DrawLine3D(bottom_right, bottom_left, Color.Magenta);
+									}
 									face_index++;
 								}
 							}
