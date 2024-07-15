@@ -509,12 +509,18 @@ namespace sledge_test
 										// I can construct a plane in texture space and then use that to map 2d texture space coordinates (on the plane) to 3d texture space then to model space
 
 										Vector3 texture_plane_vert0 = model_to_texture_space.Transform(from_map(face.OriginalPlaneVertices[0].ToVector3()));
-										Vector3 texture_plane_vert1 = model_to_texture_space.Transform(from_map(face.OriginalPlaneVertices[1].ToVector3()));
-										Vector3 texture_plane_vert2 = model_to_texture_space.Transform(from_map(face.OriginalPlaneVertices[2].ToVector3()));
+										Vector3 texture_plane_vert1 = model_to_texture_space.Transform(from_map(face.OriginalPlaneVertices[2].ToVector3()));
+										Vector3 texture_plane_vert2 = model_to_texture_space.Transform(from_map(face.OriginalPlaneVertices[1].ToVector3()));
 										Plane texture_plane = Plane.CreateFromVertices(texture_plane_vert0, texture_plane_vert1, texture_plane_vert2);
 										Vector3 texture_plane_right = (texture_plane_vert1 - texture_plane_vert0).Normalise();
 										Vector3 texture_plane_up = texture_plane.Normal.Cross(texture_plane_right).Normalise();
 										Vector3 texture_plane_point = texture_plane.GetPointOnPlane();
+
+
+										DrawSphere(texture_space_to_model.Transform(texture_plane_point), 1.0f, Color.Red);
+										DrawLine3D(texture_space_to_model.Transform(texture_plane_point), texture_space_to_model.Transform(texture_plane_point) + Vector3.TransformNormal(texture_plane.Normal, texture_space_to_model) * 10.0f, Color.Magenta);
+										DrawLine3D(texture_space_to_model.Transform(texture_plane_point), texture_space_to_model.Transform(texture_plane_point) + Vector3.TransformNormal(texture_plane_right, texture_space_to_model) * 10.0f, Color.SkyBlue);
+										DrawLine3D(texture_space_to_model.Transform(texture_plane_point), texture_space_to_model.Transform(texture_plane_point) + Vector3.TransformNormal(texture_plane_up, texture_space_to_model) * 10.0f, Color.Green);
 
 										Vector2 texture_plane_aabb_min = new Vector2(float.MaxValue, float.MaxValue);
 										Vector2 texture_plane_aabb_max = new Vector2(-float.MaxValue, -float.MaxValue);
@@ -583,6 +589,24 @@ namespace sledge_test
 										draw_plane_space_texture_coords(texture_plane_aabb_max.X, texture_plane_aabb_max.Y);
 										draw_plane_space_texture_coords(texture_plane_aabb_max.X, texture_plane_aabb_min.Y);
 
+										var texture_space_plane_min = texture_plane_to_texture_space(texture_plane_aabb_min.X, texture_plane_aabb_min.Y);
+										var texture_space_plane_max = texture_plane_to_texture_space(texture_plane_aabb_max.X, texture_plane_aabb_max.Y);
+
+										//texture_space_plane_min.X = MathF.Floor(texture_space_plane_min.X / (float)texture_width) * (float)texture_width;
+										//texture_space_plane_min.Y = MathF.Floor(texture_space_plane_min.Y / (float)texture_height) * (float)texture_height;
+
+										//texture_space_plane_max.X = MathF.Ceiling(texture_space_plane_max.X / (float)texture_width) * (float)texture_width;
+										//texture_space_plane_max.Y = MathF.Ceiling(texture_space_plane_max.Y / (float)texture_height) * (float)texture_height;
+
+										var dist_along_right = texture_space_plane_min.Dot(texture_plane_right);
+										dist_along_right = dist_along_right >= 0 ? MathF.Ceiling(dist_along_right) : MathF.Floor(dist_along_right);
+
+										var dist_along_up = texture_space_plane_min.Dot(texture_plane_up);
+										dist_along_up = dist_along_up >= 0 ? MathF.Ceiling(dist_along_up) : MathF.Floor(dist_along_up);
+
+										texture_space_plane_min = texture_space_right * dist_along_right + texture_plane_up * dist_along_up;
+
+										//DrawSphere(texture_space_plane_min, 1.0f, Color.Purple);
 
 										for (float x = texture_space_plane_min.X; x < texture_space_plane_max.X; x += (float)texture_width)
 										{
