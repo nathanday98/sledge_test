@@ -3,7 +3,7 @@ using Sledge.Formats;
 using Sledge.Formats.Map.Formats;
 using System.Diagnostics;
 using System.Numerics;
-
+using System.Text;
 using static Raylib_cs.Raylib;
 
 namespace sledge_test
@@ -12,8 +12,8 @@ namespace sledge_test
 	{
 		static Vector3 from_map(Vector3 v)
 		{
-			return new Vector3(v.X, v.Z, v.Y);
-			//return v;
+			//return new Vector3(v.X, v.Z, v.Y);
+			return v;
 		}
 
 		struct UVText
@@ -572,10 +572,10 @@ namespace sledge_test
 										Vector3 texture_top_right = texture_plane_to_model_space(texture_plane_aabb_max.X, texture_plane_aabb_max.Y);
 										Vector3 texture_bottom_right = texture_plane_to_model_space(texture_plane_aabb_max.X, texture_plane_aabb_min.Y);
 
-										DrawLine3D(texture_bottom_left, texture_top_left, Color.Green);
-										DrawLine3D(texture_top_left, texture_top_right, Color.Green);
-										DrawLine3D(texture_top_right, texture_bottom_right, Color.Green);
-										DrawLine3D(texture_bottom_right, texture_bottom_left, Color.Green);
+										//DrawLine3D(texture_bottom_left, texture_top_left, Color.Green);
+										//DrawLine3D(texture_top_left, texture_top_right, Color.Green);
+										//DrawLine3D(texture_top_right, texture_bottom_right, Color.Green);
+										//DrawLine3D(texture_bottom_right, texture_bottom_left, Color.Green);
 
 										var draw_plane_space_texture_coords = (float plane_x, float plane_y) =>
 										{
@@ -584,10 +584,10 @@ namespace sledge_test
 											uv_texts.Add(new UVText() { u = texture_space.X, v = texture_space.Y, draw_pos = GetWorldToScreen(model_space, camera), plane_x = plane_x, plane_y = plane_y });
 										};
 
-										draw_plane_space_texture_coords(texture_plane_aabb_min.X, texture_plane_aabb_min.Y);
-										draw_plane_space_texture_coords(texture_plane_aabb_min.X, texture_plane_aabb_max.Y);
-										draw_plane_space_texture_coords(texture_plane_aabb_max.X, texture_plane_aabb_max.Y);
-										draw_plane_space_texture_coords(texture_plane_aabb_max.X, texture_plane_aabb_min.Y);
+										//draw_plane_space_texture_coords(texture_plane_aabb_min.X, texture_plane_aabb_min.Y);
+										//draw_plane_space_texture_coords(texture_plane_aabb_min.X, texture_plane_aabb_max.Y);
+										//draw_plane_space_texture_coords(texture_plane_aabb_max.X, texture_plane_aabb_max.Y);
+										//draw_plane_space_texture_coords(texture_plane_aabb_max.X, texture_plane_aabb_min.Y);
 
 										var texture_space_plane_min = texture_plane_to_texture_space(texture_plane_aabb_min.X, texture_plane_aabb_min.Y);
 										var texture_space_plane_max = texture_plane_to_texture_space(texture_plane_aabb_max.X, texture_plane_aabb_max.Y);
@@ -618,6 +618,59 @@ namespace sledge_test
 
 										DrawLine3D(texture_space_to_model.Transform(texture_space_plane_min), texture_space_to_model.Transform(texture_space_plane_min + texture_plane_right * (float)texture_width), Color.Black);
 
+										var find_furthest_projection_along = (Vector3 dir) =>
+										{
+											float max_proj = float.MinValue;
+											for (int i = 0; i < face.Vertices.Count; i++)
+											{
+												Vector3 point = from_map(face.Vertices[i]) - plane_point;
+												float proj = point.Dot(dir);
+												if (proj > max_proj)
+												{
+													max_proj = proj;
+												}
+											}
+											return max_proj;
+										};
+
+										float texture_right_on_plane_x = texture_space_right.Dot(plane_right);
+										float texture_right_on_plane_y = texture_space_right.Dot(plane_up);
+										//float texture_right_on_plane_z = texture_space_right.Dot(plane_normal) * texture_width;
+										float texture_up_on_plane_x = texture_space_up.Dot(plane_right);
+										float texture_up_on_plane_y = texture_space_up.Dot(plane_up);
+										//float texture_up_on_plane_z = texture_space_up.Dot(plane_normal) * texture_height;
+
+										Vector3 texture_right_on_plane = (plane_right * texture_right_on_plane_x + plane_up * texture_right_on_plane_y).Normalise();
+										Vector3 texture_up_on_plane = (plane_right * texture_up_on_plane_x + plane_up * texture_up_on_plane_y).Normalise();
+
+										Vector3 texture_on_plane_center = plane_point + texture_right_on_plane * face.XShift + texture_up_on_plane * face.YShift;
+
+										DrawLine3D(texture_on_plane_center, texture_on_plane_center + texture_right_on_plane * 10, Color.Gold);
+										DrawLine3D(texture_on_plane_center, texture_on_plane_center + texture_up_on_plane * 10, Color.Gold);
+
+										for (int i = -5; i < 5; i++)
+										{
+											var start = texture_on_plane_center + texture_right_on_plane * i * texture_width * 0.5f + texture_up_on_plane * -5 * texture_height * 0.5f;
+											var end = texture_on_plane_center + texture_right_on_plane * i * texture_width * 0.5f + texture_up_on_plane * 5 * texture_height * 0.5f;
+											DrawLine3D(start, end, Color.Gold);
+										}
+
+										for (int i = -5; i < 5; i++)
+										{
+											var start = texture_on_plane_center + texture_right_on_plane * -5 * texture_width * 0.5f + texture_up_on_plane * i * texture_height * 0.5f;
+											var end = texture_on_plane_center + texture_right_on_plane * 5 * texture_width * 0.5f + texture_up_on_plane * i * texture_height * 0.5f;
+											DrawLine3D(start, end, Color.Gold);
+										}
+
+										float furthest_right = find_furthest_projection_along(texture_space_right);
+										float furthest_left = find_furthest_projection_along(-texture_space_right);
+										float furthest_up = find_furthest_projection_along(texture_space_up);
+										float furthest_down = find_furthest_projection_along(-texture_space_up);
+
+										//DrawLine3D(from_map(face.Vertices[0]), from_map(face.Vertices[0]) + texture_space_right * furthest_right, Color.Brown);
+										//DrawLine3D(from_map(face.Vertices[0]), from_map(face.Vertices[0]) + -texture_space_right * furthest_left, Color.Brown);
+										//DrawLine3D(from_map(face.Vertices[0]), from_map(face.Vertices[0]) + texture_space_up * furthest_up, Color.Brown);
+										//DrawLine3D(from_map(face.Vertices[0]), from_map(face.Vertices[0]) + -texture_space_up * furthest_down, Color.Brown);
 									}
 									face_index++;
 								}
