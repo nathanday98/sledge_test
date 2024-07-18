@@ -12,8 +12,8 @@ namespace sledge_test
 	{
 		static Vector3 from_map(Vector3 v)
 		{
-			//return new Vector3(v.X, v.Z, v.Y);
-			return v;
+			return new Vector3(v.X, v.Z, v.Y);
+			//return v;
 		}
 
 		struct UVText
@@ -341,154 +341,7 @@ namespace sledge_test
 										DrawLine3D(previous_point, start_point, Color.Red);
 
 
-										Vector3 texture_aabb_min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
-										Vector3 texture_aabb_max = new Vector3(-float.MaxValue, -float.MaxValue, -float.MaxValue);
-										foreach (var point_raw in face.Vertices)
-										{
-											var point = from_map(point_raw);
-
-											var texture_space_point = model_to_texture_space.Transform(point);
-
-											//uv_texts.Add(new UVText() { u = texture_space_point.X, v = texture_space_point.Y, draw_pos = GetWorldToScreen(point, camera) });
-
-
-											if (texture_space_point.X < texture_aabb_min.X)
-											{
-												texture_aabb_min.X = texture_space_point.X;
-											}
-
-											if (texture_space_point.Y < texture_aabb_min.Y)
-											{
-												texture_aabb_min.Y = texture_space_point.Y;
-											}
-
-											if (texture_space_point.Z < texture_aabb_min.Z)
-											{
-												texture_aabb_min.Z = texture_space_point.Z;
-											}
-
-											if (texture_space_point.X > texture_aabb_max.X)
-											{
-												texture_aabb_max.X = texture_space_point.X;
-											}
-
-											if (texture_space_point.Y > texture_aabb_max.Y)
-											{
-												texture_aabb_max.Y = texture_space_point.Y;
-											}
-
-											if (texture_space_point.Z > texture_aabb_max.Z)
-											{
-												texture_aabb_max.Z = texture_space_point.Z;
-											}
-										}
-
-										var convert = (float x, float y, float z) => texture_space_to_model.Transform(new Vector3(x, y, z));
-
-										{
-											Vector3 bottom_left_front = convert(texture_aabb_min.X, texture_aabb_min.Y, texture_aabb_min.Z);
-											Vector3 top_left_front = convert(texture_aabb_min.X, texture_aabb_max.Y, texture_aabb_min.Z);
-											Vector3 top_right_front = convert(texture_aabb_max.X, texture_aabb_max.Y, texture_aabb_min.Z);
-											Vector3 bottom_right_front = convert(texture_aabb_max.X, texture_aabb_min.Y, texture_aabb_min.Z);
-
-											Vector3 bottom_left_back = convert(texture_aabb_min.X, texture_aabb_min.Y, texture_aabb_max.Z);
-											Vector3 top_left_back = convert(texture_aabb_min.X, texture_aabb_max.Y, texture_aabb_max.Z);
-											Vector3 top_right_back = convert(texture_aabb_max.X, texture_aabb_max.Y, texture_aabb_max.Z);
-											Vector3 bottom_right_back = convert(texture_aabb_max.X, texture_aabb_min.Y, texture_aabb_max.Z);
-
-
-											//DrawLine3D(bottom_left_front, top_left_front, Color.Magenta);
-											//DrawLine3D(top_left_front, top_right_front, Color.Magenta);
-											//DrawLine3D(top_right_front, bottom_right_front, Color.Magenta);
-											//DrawLine3D(bottom_right_front, bottom_left_front, Color.Magenta);
-
-											//DrawLine3D(bottom_left_back, top_left_back, Color.Magenta);
-											//DrawLine3D(top_left_back, top_right_back, Color.Magenta);
-											//DrawLine3D(top_right_back, bottom_right_back, Color.Magenta);
-											//DrawLine3D(bottom_right_back, bottom_left_back, Color.Magenta);
-
-											//DrawLine3D(bottom_left_back, bottom_left_front, Color.Magenta);
-											//DrawLine3D(top_left_back, top_left_front, Color.Magenta);
-											//DrawLine3D(top_right_back, top_right_front, Color.Magenta);
-											//DrawLine3D(bottom_right_back, bottom_right_front, Color.Magenta);
-
-											int projected_bounds_index = 0;
-
-											var project_bound_to_plane = (Vector3 point) =>
-											{
-												point -= plane_point;
-												float x = point.Dot(plane_right);
-												float y = point.Dot(plane_up);
-												projected_bounds[projected_bounds_index++] = new Vector2(x, y);
-											};
-
-											project_bound_to_plane(bottom_left_back);
-											project_bound_to_plane(top_left_back);
-											project_bound_to_plane(top_right_back);
-											project_bound_to_plane(bottom_right_back);
-
-											project_bound_to_plane(bottom_left_front);
-											project_bound_to_plane(top_left_front);
-											project_bound_to_plane(top_right_front);
-											project_bound_to_plane(bottom_right_front);
-										}
-
-										Vector2 projected_min = new Vector2(float.MaxValue, float.MaxValue);
-										Vector2 projected_max = new Vector2(float.MinValue, float.MinValue);
-
-										foreach (var point in projected_bounds)
-										{
-											//var model_point = plane_point + plane_right * point.X + plane_up * point.Y;
-											//DrawSphere(model_point, 1.0f, Color.DarkGreen);
-
-											if (point.X < projected_min.X)
-											{
-												projected_min.X = point.X;
-											}
-
-											if (point.Y < projected_min.Y)
-											{
-												projected_min.Y = point.Y;
-											}
-
-											if (point.X > projected_max.X)
-											{
-												projected_max.X = point.X;
-											}
-
-											if (point.Y > projected_max.Y)
-											{
-												projected_max.Y = point.Y;
-											}
-										}
-
-										var plane_to_model_space = (float x, float y) =>
-										{
-											return plane_point + plane_right * x + plane_up * y;
-										};
-
-										Vector3 bottom_left = plane_to_model_space(projected_min.X, projected_min.Y);
-										Vector3 top_left = plane_to_model_space(projected_min.X, projected_max.Y);
-										Vector3 top_right = plane_to_model_space(projected_max.X, projected_max.Y);
-										Vector3 bottom_right = plane_to_model_space(projected_max.X, projected_min.Y);
-
-										//DrawLine3D(bottom_left, top_left, Color.Magenta);
-										//DrawLine3D(top_left, top_right, Color.Magenta);
-										//DrawLine3D(top_right, bottom_right, Color.Magenta);
-										//DrawLine3D(bottom_right, bottom_left, Color.Magenta);
-
-										//var draw_model_uv_text = (Vector3 point) =>
-										//{
-										//	var texture_space = model_to_texture_space.Transform(point);
-										//	uv_texts.Add(new UVText() { u = texture_space.X, v = texture_space.Y, draw_pos = GetWorldToScreen(point, camera) });
-										//};
-
-										//draw_model_uv_text(bottom_left);
-										//draw_model_uv_text(top_left);
-										//draw_model_uv_text(top_right);
-										//draw_model_uv_text(bottom_right);
-
-										var texture_space_center = texture_space_to_model.Transform(Vector3.Zero);
+										var texture_space_center = new Vector3(face.XShift, face.YShift, 0.0f);
 
 										DrawSphere(texture_space_center, 1.0f, Color.Black);
 										DrawLine3D(texture_space_center, texture_space_center + texture_space_forward * 10.0f, Color.Magenta);
@@ -508,19 +361,23 @@ namespace sledge_test
 
 										// I can construct a plane in texture space and then use that to map 2d texture space coordinates (on the plane) to 3d texture space then to model space
 
-										Vector3 texture_plane_vert0 = model_to_texture_space.Transform(from_map(face.OriginalPlaneVertices[0].ToVector3()));
-										Vector3 texture_plane_vert1 = model_to_texture_space.Transform(from_map(face.OriginalPlaneVertices[2].ToVector3()));
-										Vector3 texture_plane_vert2 = model_to_texture_space.Transform(from_map(face.OriginalPlaneVertices[1].ToVector3()));
+										Vector3 texture_plane_vert0 = model_to_texture_space.Transform(from_map(face.Vertices[0]));
+										Vector3 texture_plane_vert1 = model_to_texture_space.Transform(from_map(face.Vertices[1]));
+										Vector3 texture_plane_vert2 = model_to_texture_space.Transform(from_map(face.Vertices[2]));
 										Plane texture_plane = Plane.CreateFromVertices(texture_plane_vert0, texture_plane_vert1, texture_plane_vert2);
 										Vector3 texture_plane_right = (texture_plane_vert1 - texture_plane_vert0).Normalise();
 										Vector3 texture_plane_up = texture_plane.Normal.Cross(texture_plane_right).Normalise();
 										Vector3 texture_plane_point = texture_plane.GetPointOnPlane();
 
+										Vector3 texture_plane_right_in_model_space = Vector3.TransformNormal(texture_plane_right, texture_space_to_model);
+										Vector3 texture_plane_up_in_model_space = Vector3.TransformNormal(texture_plane_up, texture_space_to_model);
+										Vector3 texture_plane_center_in_model_space = texture_space_to_model.Transform(texture_plane_point);
 
-										DrawSphere(texture_space_to_model.Transform(texture_plane_point), 1.0f, Color.Red);
-										DrawLine3D(texture_space_to_model.Transform(texture_plane_point), texture_space_to_model.Transform(texture_plane_point) + Vector3.TransformNormal(texture_plane.Normal, texture_space_to_model) * 10.0f, Color.Magenta);
-										DrawLine3D(texture_space_to_model.Transform(texture_plane_point), texture_space_to_model.Transform(texture_plane_point) + Vector3.TransformNormal(texture_plane_right, texture_space_to_model) * 10.0f, Color.SkyBlue);
-										DrawLine3D(texture_space_to_model.Transform(texture_plane_point), texture_space_to_model.Transform(texture_plane_point) + Vector3.TransformNormal(texture_plane_up, texture_space_to_model) * 10.0f, Color.Green);
+
+										//DrawSphere(texture_plane_center_in_model_space, 1.0f, Color.Red);
+										//DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + Vector3.TransformNormal(texture_plane.Normal, texture_space_to_model) * 10.0f, 1.5f, 1.5f, 12, Color.Magenta);
+										//DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + Vector3.TransformNormal(texture_plane_right, texture_space_to_model) * texture_width, 1.5f, 1.5f, 12, Color.SkyBlue);
+										//DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + Vector3.TransformNormal(texture_plane_up, texture_space_to_model) * texture_height, 1.5f, 1.5f, 12, Color.Green);
 
 										Vector2 texture_plane_aabb_min = new Vector2(float.MaxValue, float.MaxValue);
 										Vector2 texture_plane_aabb_max = new Vector2(-float.MaxValue, -float.MaxValue);
@@ -559,7 +416,12 @@ namespace sledge_test
 												texture_plane_aabb_max.Y = y;
 											}
 										}
-;
+
+										texture_plane_aabb_min.X = MathF.Floor(texture_plane_aabb_min.X / texture_width) * texture_width;
+										texture_plane_aabb_min.Y = MathF.Floor(texture_plane_aabb_min.Y / texture_height) * texture_height;
+										texture_plane_aabb_max.X = MathF.Ceiling(texture_plane_aabb_max.X / texture_width) * texture_width;
+										texture_plane_aabb_max.Y = MathF.Ceiling(texture_plane_aabb_max.Y / texture_height) * texture_height;
+										var texture_plane_aabb_size = (texture_plane_aabb_max - texture_plane_aabb_min) / new Vector2(texture_width, texture_height);
 										var texture_plane_to_texture_space = (float x, float y) => texture_plane_point + texture_plane_right * x + texture_plane_up * y;
 
 										var texture_plane_to_model_space = (float x, float y) =>
@@ -618,20 +480,7 @@ namespace sledge_test
 
 										DrawLine3D(texture_space_to_model.Transform(texture_space_plane_min), texture_space_to_model.Transform(texture_space_plane_min + texture_plane_right * (float)texture_width), Color.Black);
 
-										var find_furthest_projection_along = (Vector3 dir) =>
-										{
-											float max_proj = float.MinValue;
-											for (int i = 0; i < face.Vertices.Count; i++)
-											{
-												Vector3 point = from_map(face.Vertices[i]) - plane_point;
-												float proj = point.Dot(dir);
-												if (proj > max_proj)
-												{
-													max_proj = proj;
-												}
-											}
-											return max_proj;
-										};
+										
 
 										float texture_right_on_plane_x = texture_space_right.Dot(plane_right);
 										float texture_right_on_plane_y = texture_space_right.Dot(plane_up);
@@ -642,30 +491,95 @@ namespace sledge_test
 
 										Vector3 texture_right_on_plane = (plane_right * texture_right_on_plane_x + plane_up * texture_right_on_plane_y).Normalise();
 										Vector3 texture_up_on_plane = (plane_right * texture_up_on_plane_x + plane_up * texture_up_on_plane_y).Normalise();
+										//var texture_right_on_plane = texture_space_right;
+										//var texture_up_on_plane = texture_space_up;
 
-										Vector3 texture_on_plane_center = plane_point + texture_right_on_plane * face.XShift + texture_up_on_plane * face.YShift;
+										Vector3 texture_on_plane_center = texture_plane_center_in_model_space;
 
-										DrawLine3D(texture_on_plane_center, texture_on_plane_center + texture_right_on_plane * 10, Color.Gold);
-										DrawLine3D(texture_on_plane_center, texture_on_plane_center + texture_up_on_plane * 10, Color.Gold);
+										DrawLine3D(texture_on_plane_center, texture_on_plane_center + texture_plane_right_in_model_space * 10, Color.Gold);
+										DrawLine3D(texture_on_plane_center, texture_on_plane_center + texture_plane_up_in_model_space * 10, Color.Gold);
+
+										//for (int i = -5; i < 5; i++)
+										//{
+										//	for (int j = -5; j < 5; j++)
+										//	{
+										//		for (int k = -5; k < 5; k++)
+										//		{
+										//			var pos = texture_space_center + texture_space_right * i * texture_width * face.XScale + texture_space_up * j * texture_height * face.YScale + texture_space_forward;
+										//			var pos_on_plane = plane.Project(pos);
+										//			DrawSphere(pos_on_plane, 1.0f, Color.Gold);
+										//		}
+
+										//	}
+
+										//}
+
+										var find_furthest_projection_along = (Vector3 dir) =>
+										{
+											float max_proj = float.MinValue;
+											for (int i = 0; i < face.Vertices.Count; i++)
+											{
+												Vector3 point = from_map(face.Vertices[i]) - texture_plane_center_in_model_space;
+												float proj = point.Dot(dir);
+												if (proj > max_proj)
+												{
+													max_proj = proj;
+												}
+											}
+											return max_proj;
+										};
+
+										var furthest = (Vector3 dir) =>
+										{
+											float proj = find_furthest_projection_along(dir);
+											DrawLine3D(texture_plane_center_in_model_space, texture_plane_center_in_model_space + dir * proj, Color.Green);
+										};
 
 										for (int i = -5; i < 5; i++)
 										{
-											var start = texture_on_plane_center + texture_right_on_plane * i * texture_width * 0.5f + texture_up_on_plane * -5 * texture_height * 0.5f;
-											var end = texture_on_plane_center + texture_right_on_plane * i * texture_width * 0.5f + texture_up_on_plane * 5 * texture_height * 0.5f;
-											DrawLine3D(start, end, Color.Gold);
+											var start = texture_on_plane_center + texture_plane_right_in_model_space * i * texture_width + texture_plane_up_in_model_space * -5 * texture_height;
+											var end = texture_on_plane_center + texture_plane_right_in_model_space * i * texture_width + texture_plane_up_in_model_space * 5 * texture_height;
+											//DrawLine3D(start, end, Color.Gold);
 										}
 
 										for (int i = -5; i < 5; i++)
 										{
-											var start = texture_on_plane_center + texture_right_on_plane * -5 * texture_width * 0.5f + texture_up_on_plane * i * texture_height * 0.5f;
-											var end = texture_on_plane_center + texture_right_on_plane * 5 * texture_width * 0.5f + texture_up_on_plane * i * texture_height * 0.5f;
-											DrawLine3D(start, end, Color.Gold);
+											var start = texture_on_plane_center + texture_plane_right_in_model_space * -5 * texture_width + texture_plane_up_in_model_space * i * texture_height;
+											var end = texture_on_plane_center + texture_plane_right_in_model_space * 5 * texture_width + texture_plane_up_in_model_space * i * texture_height;
+											//DrawLine3D(start, end, Color.Gold);
 										}
 
-										float furthest_right = find_furthest_projection_along(texture_space_right);
-										float furthest_left = find_furthest_projection_along(-texture_space_right);
-										float furthest_up = find_furthest_projection_along(texture_space_up);
-										float furthest_down = find_furthest_projection_along(-texture_space_up);
+										var grid_pos = (int x, int y) =>
+										{
+											return texture_bottom_left + texture_plane_right_in_model_space * x * texture_width + texture_plane_up_in_model_space * y * texture_height;
+										};
+
+										for(int x = 0; x < (int)texture_plane_aabb_size.X; x++)
+										{
+											for (int y = 0; y < (int)texture_plane_aabb_size.Y; y++)
+											{
+												var grid_bottom_left = grid_pos(x, y);
+												var grid_bottom_right = grid_pos(x+1, y);
+												var grid_top_left = grid_pos(x, y+1);
+												var grid_top_right = grid_pos(x+1, y+1);
+												DrawLine3D(grid_bottom_left, grid_top_left, Color.Brown);
+												DrawLine3D(grid_top_left, grid_top_right, Color.Brown);
+												DrawLine3D(grid_top_right, grid_bottom_right, Color.Brown);
+												DrawLine3D(grid_bottom_right, grid_bottom_left, Color.Brown);
+											}
+										}
+
+
+										//furthest(texture_plane_right_in_model_space);
+										//furthest(-texture_plane_right_in_model_space);
+
+										//furthest(texture_plane_up_in_model_space);
+										//furthest(-texture_plane_up_in_model_space);
+
+										DrawSphere(texture_bottom_left, 1.0f, Color.Brown);
+										DrawSphere(texture_bottom_right, 1.0f, Color.Brown);
+										DrawSphere(texture_top_left, 1.0f, Color.Brown);
+										DrawSphere(texture_top_right, 1.0f, Color.Brown);
 
 										//DrawLine3D(from_map(face.Vertices[0]), from_map(face.Vertices[0]) + texture_space_right * furthest_right, Color.Brown);
 										//DrawLine3D(from_map(face.Vertices[0]), from_map(face.Vertices[0]) + -texture_space_right * furthest_left, Color.Brown);
