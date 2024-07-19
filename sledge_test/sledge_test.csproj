@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Clipper2" Version="1.4.0" />
     <PackageReference Include="Raylib-cs" Version="6.1.1" />
     <PackageReference Include="Sledge.Formats" Version="1.2.5" />
     <PackageReference Include="Sledge.Formats.Bsp" Version="1.0.15" />
