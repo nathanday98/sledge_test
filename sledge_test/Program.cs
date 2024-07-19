@@ -114,10 +114,6 @@ namespace sledge_test
 
 									average_point /= face.Vertices.Count;
 
-									//DrawSphere(average_point, 1.0f, Color.Black);
-									//DrawLine3D(average_point, average_point + plane_normal * 10.0f, Color.Magenta);
-									//DrawLine3D(average_point, average_point + plane_right * 10.0f, Color.SkyBlue);
-									//DrawLine3D(average_point, average_point + plane_up * 10.0f, Color.Green);
 
 
 									Vector3 texture_space_right = from_map(face.UAxis);
@@ -140,8 +136,12 @@ namespace sledge_test
 									Matrix4x4 texture_space_to_model = Matrix4x4.Identity;
 									Debug.Assert(Matrix4x4.Invert(model_to_texture_space, out texture_space_to_model));
 
-									if (face_index == 1)
+									//if (face_index == 4)
 									{
+									//DrawSphere(average_point, 1.0f, Color.Black);
+									//DrawLine3D(average_point, average_point + plane_normal * 10.0f, Color.Magenta);
+									//DrawLine3D(average_point, average_point + plane_right * 10.0f, Color.SkyBlue);
+									//DrawLine3D(average_point, average_point + plane_up * 10.0f, Color.Green);
 										Vector3 new_u_axis = from_map(face.UAxis) / face.XScale;
 										Vector3 new_v_axis = from_map(face.VAxis) / face.YScale;
 										{
@@ -184,7 +184,7 @@ namespace sledge_test
 										DrawLine3D(texture_space_center, texture_space_center + texture_space_up * 10.0f, Color.Green);
 
 										// I can construct a plane in texture space and then use that to map 2d texture space coordinates (on the plane) to 3d texture space then to model space
-
+										
 										Vector3 texture_plane_vert0 = model_to_texture_space.Transform(from_map(face.Vertices[0]));
 										Vector3 texture_plane_vert1 = model_to_texture_space.Transform(from_map(face.Vertices[1]));
 										Vector3 texture_plane_vert2 = model_to_texture_space.Transform(from_map(face.Vertices[2]));
@@ -193,16 +193,19 @@ namespace sledge_test
 										Vector3 texture_plane_up = texture_plane.Normal.Cross(texture_plane_right).Normalise();
 										Vector3 texture_plane_point = texture_plane.GetPointOnPlane();
 
+
 										Vector3 texture_plane_right_in_model_space = Vector3.TransformNormal(texture_plane_right, texture_space_to_model);
 										Vector3 texture_plane_up_in_model_space = Vector3.TransformNormal(texture_plane_up, texture_space_to_model);
-										Vector3 texture_plane_forward_in_model_space = Vector3.TransformNormal(texture_plane.Normal, texture_space_to_model);
 										Vector3 texture_plane_center_in_model_space = texture_space_to_model.Transform(texture_plane_point);
+										Vector3 texture_plane_normal_in_model_space = Vector3.TransformNormal(texture_plane.Normal, texture_space_to_model);
 
+										float dot_with_plane_normal = texture_plane_normal_in_model_space.Dot(plane_normal);
+										uv_texts.Add(new UVText() { u = dot_with_plane_normal, draw_pos = GetWorldToScreen(average_point, camera) });
 
-										DrawSphere(texture_plane_center_in_model_space, 1.0f, Color.Red);
-										DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + texture_plane_forward_in_model_space * 10.0f, 1.5f, 1.5f, 12, Color.Magenta);
-										DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + texture_plane_right_in_model_space * texture_width, 1.5f, 1.5f, 12, Color.SkyBlue);
-										DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + texture_plane_up_in_model_space * texture_height, 1.5f, 1.5f, 12, Color.Green);
+										//DrawSphere(texture_plane_center_in_model_space, 1.0f, Color.Red);
+										//DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + texture_plane_right_in_model_space * texture_width, 1.5f, 1.5f, 12, Color.SkyBlue);
+										//DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + texture_plane_up_in_model_space * texture_height, 1.5f, 1.5f, 12, Color.Green);
+										//DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + texture_plane_normal_in_model_space * texture_height, 1.5f, 1.5f, 12, Color.Magenta);
 										PathsD face_paths = new PathsD();
 										double[] face_path_points = new double[face.Vertices.Count * 2];
 
@@ -212,6 +215,7 @@ namespace sledge_test
 											texture_space_point -= texture_plane_point;
 											float x = texture_space_point.Dot(texture_plane_right);
 											float y = texture_space_point.Dot(texture_plane_up);
+
 											return new Vector2(x, y);
 										};
 
@@ -226,7 +230,7 @@ namespace sledge_test
 
 											Vector3 texture_space_point = model_to_texture_space.Transform(from_map(face.Vertices[i]));
 
-											uv_texts.Add(new UVText() { u = texture_space_point.X, v = texture_space_point.Y, draw_pos = GetWorldToScreen(from_map(face.Vertices[i]), camera) });
+											//uv_texts.Add(new UVText() { u = texture_space_point.X, v = texture_space_point.Y, draw_pos = GetWorldToScreen(from_map(face.Vertices[i]), camera) });
 
 											if (point.X < texture_plane_aabb_min.X)
 											{
