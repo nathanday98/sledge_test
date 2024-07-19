@@ -136,7 +136,7 @@ namespace sledge_test
 									Matrix4x4 texture_space_to_model = Matrix4x4.Identity;
 									Debug.Assert(Matrix4x4.Invert(model_to_texture_space, out texture_space_to_model));
 
-									//if (face_index == 4)
+									if (face_index == 1)
 									{
 									//DrawSphere(average_point, 1.0f, Color.Black);
 									//DrawLine3D(average_point, average_point + plane_normal * 10.0f, Color.Magenta);
@@ -200,7 +200,7 @@ namespace sledge_test
 										Vector3 texture_plane_normal_in_model_space = Vector3.TransformNormal(texture_plane.Normal, texture_space_to_model);
 
 										float dot_with_plane_normal = texture_plane_normal_in_model_space.Dot(plane_normal);
-										uv_texts.Add(new UVText() { u = dot_with_plane_normal, draw_pos = GetWorldToScreen(average_point, camera) });
+										//uv_texts.Add(new UVText() { u = dot_with_plane_normal, draw_pos = GetWorldToScreen(average_point, camera) });
 
 										//DrawSphere(texture_plane_center_in_model_space, 1.0f, Color.Red);
 										//DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + texture_plane_right_in_model_space * texture_width, 1.5f, 1.5f, 12, Color.SkyBlue);
@@ -230,7 +230,7 @@ namespace sledge_test
 
 											Vector3 texture_space_point = model_to_texture_space.Transform(from_map(face.Vertices[i]));
 
-											//uv_texts.Add(new UVText() { u = texture_space_point.X, v = texture_space_point.Y, draw_pos = GetWorldToScreen(from_map(face.Vertices[i]), camera) });
+											uv_texts.Add(new UVText() { u = texture_space_point.X, v = texture_space_point.Y, draw_pos = GetWorldToScreen(from_map(face.Vertices[i]), camera) });
 
 											if (point.X < texture_plane_aabb_min.X)
 											{
