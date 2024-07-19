@@ -27,7 +27,7 @@ namespace sledge_test
 		static void Main(string[] args)
 		{
 			var format = new QuakeMapFormat();
-			var map = format.ReadFromFile("C:\\dev\\dngn\\source_data\\test_valve.map");
+			var map = format.ReadFromFile("C:\\dev\\dngn\\source_data\\test_valve2.map");
 			var world_spawn = map.Worldspawn;
 
 			InitWindow(1920, 1080, "Hello World");
@@ -119,20 +119,10 @@ namespace sledge_test
 									//DrawLine3D(average_point, average_point + plane_right * 10.0f, Color.SkyBlue);
 									//DrawLine3D(average_point, average_point + plane_up * 10.0f, Color.Green);
 
-									var u_axis = from_map(face.UAxis);
-									var v_axis = from_map(face.VAxis);
 
-									var rotation_axis = plane_normal;
-
-									//var quat = Quaternion.CreateFromAxisAngle(rotation_axis, face.Rotation * MathF.PI / 180);
-									var quat = Quaternion.Identity;
-
-
-
-
-									Vector3 texture_space_right = from_map(face.UAxis).Normalise();
-									Vector3 texture_space_up = from_map(face.VAxis).Normalise();
-									Vector3 texture_space_forward = texture_space_up.Cross(texture_space_right).Normalise();
+									Vector3 texture_space_right = from_map(face.UAxis);
+									Vector3 texture_space_up = from_map(face.VAxis);
+									Vector3 texture_space_forward = texture_space_up.Cross(texture_space_right);
 
 									Matrix4x4 texture_space_basis = new Matrix4x4(
 										texture_space_right.X, texture_space_up.X, texture_space_forward.X, 0,
@@ -143,13 +133,15 @@ namespace sledge_test
 
 									Matrix4x4 model_to_texture_space = texture_space_basis * Matrix4x4.CreateScale(1.0f / face.XScale, 1.0f / face.YScale, 1.0f) * Matrix4x4.CreateTranslation(face.XShift, face.YShift, 0.0f);
 
-									Matrix4x4 texture_space_to_model = Matrix4x4.CreateTranslation(-face.XShift, -face.YShift, 0.0f) * Matrix4x4.CreateScale(face.XScale, face.YScale, 1.0f) * Matrix4x4.Transpose(texture_space_basis);
+									//Matrix4x4 texture_space_to_model = Matrix4x4.CreateTranslation(-face.XShift, -face.YShift, 0.0f) * Matrix4x4.CreateScale(face.XScale, face.YScale, 1.0f) * Matrix4x4.Transpose(texture_space_basis);
 
 
 									//Matrix4x4 texture_space_to_model = Matrix4x4.CreateTranslation(-face.XShift, -face.YShift, 0) * Matrix4x4.Transpose(texture_space_basis);
-									//Matrix4x4 texture_space_to_model = Matrix4x4.Identity;
-									//Debug.Assert(Matrix4x4.Invert(model_to_texture_space, out texture_space_to_model));
+									Matrix4x4 texture_space_to_model = Matrix4x4.Identity;
+									Debug.Assert(Matrix4x4.Invert(model_to_texture_space, out texture_space_to_model));
 
+									if (face_index == 1)
+									{
 										Vector3 new_u_axis = from_map(face.UAxis) / face.XScale;
 										Vector3 new_v_axis = from_map(face.VAxis) / face.YScale;
 										{
@@ -184,25 +176,12 @@ namespace sledge_test
 											DrawLine3D(previous_point, start_point, Color.Red);
 										}
 
-									if (face_index == 0)
-									{
 										var texture_space_center = new Vector3(face.XShift, face.YShift, 0.0f);
 
 										DrawSphere(texture_space_center, 1.0f, Color.Black);
 										DrawLine3D(texture_space_center, texture_space_center + texture_space_forward * 10.0f, Color.Magenta);
 										DrawLine3D(texture_space_center, texture_space_center + texture_space_right * 10.0f, Color.SkyBlue);
 										DrawLine3D(texture_space_center, texture_space_center + texture_space_up * 10.0f, Color.Green);
-
-
-										//DrawSphere(plane.Project(bottom_left_back), 1.0f, Color.DarkGreen);
-										//DrawSphere(plane.Project(top_left_back), 1.0f, Color.DarkGreen);
-										//DrawSphere(plane.Project(top_right_back), 1.0f, Color.DarkGreen);
-										//DrawSphere(plane.Project(bottom_right_back), 1.0f, Color.DarkGreen);
-
-										//DrawSphere(plane.Project(bottom_left_front), 1.0f, Color.DarkGreen);
-										//DrawSphere(plane.Project(top_left_front), 1.0f, Color.DarkGreen);
-										//DrawSphere(plane.Project(top_right_front), 1.0f, Color.DarkGreen);
-										//DrawSphere(plane.Project(bottom_right_front), 1.0f, Color.DarkGreen);
 
 										// I can construct a plane in texture space and then use that to map 2d texture space coordinates (on the plane) to 3d texture space then to model space
 
@@ -216,13 +195,14 @@ namespace sledge_test
 
 										Vector3 texture_plane_right_in_model_space = Vector3.TransformNormal(texture_plane_right, texture_space_to_model);
 										Vector3 texture_plane_up_in_model_space = Vector3.TransformNormal(texture_plane_up, texture_space_to_model);
+										Vector3 texture_plane_forward_in_model_space = Vector3.TransformNormal(texture_plane.Normal, texture_space_to_model);
 										Vector3 texture_plane_center_in_model_space = texture_space_to_model.Transform(texture_plane_point);
 
 
-										//DrawSphere(texture_plane_center_in_model_space, 1.0f, Color.Red);
-										//DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + Vector3.TransformNormal(texture_plane.Normal, texture_space_to_model) * 10.0f, 1.5f, 1.5f, 12, Color.Magenta);
-										//DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + Vector3.TransformNormal(texture_plane_right, texture_space_to_model) * texture_width, 1.5f, 1.5f, 12, Color.SkyBlue);
-										//DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + Vector3.TransformNormal(texture_plane_up, texture_space_to_model) * texture_height, 1.5f, 1.5f, 12, Color.Green);
+										DrawSphere(texture_plane_center_in_model_space, 1.0f, Color.Red);
+										DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + texture_plane_forward_in_model_space * 10.0f, 1.5f, 1.5f, 12, Color.Magenta);
+										DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + texture_plane_right_in_model_space * texture_width, 1.5f, 1.5f, 12, Color.SkyBlue);
+										DrawCylinderEx(texture_plane_center_in_model_space, texture_plane_center_in_model_space + texture_plane_up_in_model_space * texture_height, 1.5f, 1.5f, 12, Color.Green);
 										PathsD face_paths = new PathsD();
 										double[] face_path_points = new double[face.Vertices.Count * 2];
 
@@ -244,7 +224,9 @@ namespace sledge_test
 											//var model_space_point = texture_space_to_model.Transform(texture_plane_point + texture_plane_right * x + texture_plane_up * y);
 											//DrawSphere(model_space_point, 1.0f, Color.Purple);
 
-											//uv_texts.Add(new UVText() { u = texture_space_point.X, v = texture_space_point.Y, draw_pos = GetWorldToScreen(point, camera) });
+											Vector3 texture_space_point = model_to_texture_space.Transform(from_map(face.Vertices[i]));
+
+											uv_texts.Add(new UVText() { u = texture_space_point.X, v = texture_space_point.Y, draw_pos = GetWorldToScreen(from_map(face.Vertices[i]), camera) });
 
 											if (point.X < texture_plane_aabb_min.X)
 											{
@@ -302,38 +284,6 @@ namespace sledge_test
 											uv_texts.Add(new UVText() { u = texture_space.X, v = texture_space.Y, draw_pos = GetWorldToScreen(model_space, camera), plane_x = plane_x, plane_y = plane_y });
 										};
 
-										//draw_plane_space_texture_coords(texture_plane_aabb_min.X, texture_plane_aabb_min.Y);
-										//draw_plane_space_texture_coords(texture_plane_aabb_min.X, texture_plane_aabb_max.Y);
-										//draw_plane_space_texture_coords(texture_plane_aabb_max.X, texture_plane_aabb_max.Y);
-										//draw_plane_space_texture_coords(texture_plane_aabb_max.X, texture_plane_aabb_min.Y);
-
-										var texture_space_plane_min = texture_plane_to_texture_space(texture_plane_aabb_min.X, texture_plane_aabb_min.Y);
-										var texture_space_plane_max = texture_plane_to_texture_space(texture_plane_aabb_max.X, texture_plane_aabb_max.Y);
-
-										//texture_space_plane_min.X = MathF.Floor(texture_space_plane_min.X / (float)texture_width) * (float)texture_width;
-										//texture_space_plane_min.Y = MathF.Floor(texture_space_plane_min.Y / (float)texture_height) * (float)texture_height;
-
-										//texture_space_plane_max.X = MathF.Ceiling(texture_space_plane_max.X / (float)texture_width) * (float)texture_width;
-										//texture_space_plane_max.Y = MathF.Ceiling(texture_space_plane_max.Y / (float)texture_height) * (float)texture_height;
-
-										var dist_along_right = texture_space_plane_min.Dot(texture_plane_right);
-										dist_along_right = dist_along_right >= 0 ? MathF.Ceiling(dist_along_right) : MathF.Floor(dist_along_right);
-
-										var dist_along_up = texture_space_plane_min.Dot(texture_plane_up);
-										dist_along_up = dist_along_up >= 0 ? MathF.Ceiling(dist_along_up) : MathF.Floor(dist_along_up);
-
-										texture_space_plane_min = texture_space_right * dist_along_right + texture_plane_up * dist_along_up;
-
-										//DrawSphere(texture_space_plane_min, 1.0f, Color.Purple);
-
-										for (float x = texture_space_plane_min.X; x < texture_space_plane_max.X; x += (float)texture_width)
-										{
-											for (float y = texture_space_plane_min.Y; y < texture_space_plane_max.Y; y += (float)texture_height)
-											{
-												//var texture_space_point =
-											}
-										}
-
 										
 
 										float texture_right_on_plane_x = texture_space_right.Dot(plane_right);
@@ -353,55 +303,6 @@ namespace sledge_test
 										DrawLine3D(texture_on_plane_center, texture_on_plane_center + texture_plane_right_in_model_space * 10, Color.Gold);
 										DrawLine3D(texture_on_plane_center, texture_on_plane_center + texture_plane_up_in_model_space * 10, Color.Gold);
 
-										//for (int i = -5; i < 5; i++)
-										//{
-										//	for (int j = -5; j < 5; j++)
-										//	{
-										//		for (int k = -5; k < 5; k++)
-										//		{
-										//			var pos = texture_space_center + texture_space_right * i * texture_width * face.XScale + texture_space_up * j * texture_height * face.YScale + texture_space_forward;
-										//			var pos_on_plane = plane.Project(pos);
-										//			DrawSphere(pos_on_plane, 1.0f, Color.Gold);
-										//		}
-
-										//	}
-
-										//}
-
-										var find_furthest_projection_along = (Vector3 dir) =>
-										{
-											float max_proj = float.MinValue;
-											for (int i = 0; i < face.Vertices.Count; i++)
-											{
-												Vector3 point = from_map(face.Vertices[i]) - texture_plane_center_in_model_space;
-												float proj = point.Dot(dir);
-												if (proj > max_proj)
-												{
-													max_proj = proj;
-												}
-											}
-											return max_proj;
-										};
-
-										var furthest = (Vector3 dir) =>
-										{
-											float proj = find_furthest_projection_along(dir);
-											DrawLine3D(texture_plane_center_in_model_space, texture_plane_center_in_model_space + dir * proj, Color.Green);
-										};
-
-										for (int i = -5; i < 5; i++)
-										{
-											var start = texture_on_plane_center + texture_plane_right_in_model_space * i * texture_width + texture_plane_up_in_model_space * -5 * texture_height;
-											var end = texture_on_plane_center + texture_plane_right_in_model_space * i * texture_width + texture_plane_up_in_model_space * 5 * texture_height;
-											//DrawLine3D(start, end, Color.Gold);
-										}
-
-										for (int i = -5; i < 5; i++)
-										{
-											var start = texture_on_plane_center + texture_plane_right_in_model_space * -5 * texture_width + texture_plane_up_in_model_space * i * texture_height;
-											var end = texture_on_plane_center + texture_plane_right_in_model_space * 5 * texture_width + texture_plane_up_in_model_space * i * texture_height;
-											//DrawLine3D(start, end, Color.Gold);
-										}
 
 										var grid_pos = (int x, int y) =>
 										{
@@ -426,7 +327,7 @@ namespace sledge_test
 													if (path.Count == 0) continue;
 													var previous_point = texture_plane_to_model_space((float)path[0].x, (float)path[0].y);
 													var start_point = previous_point;
-													for(int i = 1; i < path.Count; i++)
+													for (int i = 1; i < path.Count; i++)
 													{
 														var point = texture_plane_to_model_space((float)path[i].x, (float)path[i].y);
 														DrawLine3D(previous_point, point, Color.Brown);
@@ -440,13 +341,6 @@ namespace sledge_test
 												//DrawLine3D(grid_bottom_right, grid_bottom_left, Color.Brown);
 											}
 										}
-
-
-										//furthest(texture_plane_right_in_model_space);
-										//furthest(-texture_plane_right_in_model_space);
-
-										//furthest(texture_plane_up_in_model_space);
-										//furthest(-texture_plane_up_in_model_space);
 
 										//DrawSphere(texture_bottom_left, 1.0f, Color.Brown);
 										//DrawSphere(texture_bottom_right, 1.0f, Color.Brown);
