@@ -27,7 +27,7 @@ namespace sledge_test
 		static void Main(string[] args)
 		{
 			var format = new QuakeMapFormat();
-			var map = format.ReadFromFile("C:\\dev\\dngn\\source_data\\test_valve2.map");
+			var map = format.ReadFromFile("C:\\dev\\dngn\\source_data\\test_valve.map");
 			var world_spawn = map.Worldspawn;
 
 			InitWindow(1920, 1080, "Hello World");
@@ -136,7 +136,7 @@ namespace sledge_test
 									Matrix4x4 texture_space_to_model = Matrix4x4.Identity;
 									Debug.Assert(Matrix4x4.Invert(model_to_texture_space, out texture_space_to_model));
 
-									if (face_index == 1)
+									if (face_index == 0)
 									{
 									//DrawSphere(average_point, 1.0f, Color.Black);
 									//DrawLine3D(average_point, average_point + plane_normal * 10.0f, Color.Magenta);
@@ -188,22 +188,20 @@ namespace sledge_test
 										Vector3 texture_plane_vert0 = model_to_texture_space.Transform(from_map(face.Vertices[0]));
 										Vector3 texture_plane_vert1 = model_to_texture_space.Transform(from_map(face.Vertices[1]));
 										Vector3 texture_plane_vert2 = model_to_texture_space.Transform(from_map(face.Vertices[2]));
-										Plane texture_plane = Plane.CreateFromVertices(texture_plane_vert0, texture_plane_vert1, texture_plane_vert2);
-										Vector3 texture_plane_right = (texture_plane_vert1 - texture_plane_vert0).Normalise();
-										Vector3 texture_plane_up = texture_plane.Normal.Cross(texture_plane_right).Normalise();
-										Vector3 texture_plane_point = texture_plane.GetPointOnPlane();
 
-										float dot_with_plane_normal = texture_space_up.Dot(texture_plane.Normal);
-										if(dot_with_plane_normal > 0)
+										float dot_with_plane_normal = (texture_plane_vert1 - texture_plane_vert0).Cross(texture_plane_vert2 - texture_plane_vert0).Y;
+										if(dot_with_plane_normal < 0)
 										{
 											texture_plane_vert0 = model_to_texture_space.Transform(from_map(face.Vertices[0]));
 											texture_plane_vert1 = model_to_texture_space.Transform(from_map(face.Vertices[2]));
 											texture_plane_vert2 = model_to_texture_space.Transform(from_map(face.Vertices[1]));
-											texture_plane = Plane.CreateFromVertices(texture_plane_vert0, texture_plane_vert1, texture_plane_vert2);
-											texture_plane_right = (texture_plane_vert1 - texture_plane_vert0).Normalise();
-											texture_plane_up = texture_plane.Normal.Cross(texture_plane_right).Normalise();
-											texture_plane_point = texture_plane.GetPointOnPlane();
 										}
+
+										Plane texture_plane = Plane.CreateFromVertices(texture_plane_vert0, texture_plane_vert1, texture_plane_vert2);
+										Vector3 texture_plane_right = (texture_plane_vert1 - texture_plane_vert0).Normalise();
+										Vector3 texture_plane_up = texture_plane.Normal.Cross(texture_plane_right).Normalise();
+										Vector3 texture_plane_point = texture_plane.GetPointOnPlane();
+										Vector3 texture_plane_avg = model_to_texture_space.Transform(average_point);
 
 
 										Vector3 texture_plane_right_in_model_space = Vector3.TransformNormal(texture_plane_right, texture_space_to_model);
