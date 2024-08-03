@@ -136,12 +136,12 @@ namespace sledge_test
 									Matrix4x4 texture_space_to_model = Matrix4x4.Identity;
 									Debug.Assert(Matrix4x4.Invert(model_to_texture_space, out texture_space_to_model));
 
-									if (face_index == 0)
+									//if (face_index == 0)
 									{
-									//DrawSphere(average_point, 1.0f, Color.Black);
-									//DrawLine3D(average_point, average_point + plane_normal * 10.0f, Color.Magenta);
-									//DrawLine3D(average_point, average_point + plane_right * 10.0f, Color.SkyBlue);
-									//DrawLine3D(average_point, average_point + plane_up * 10.0f, Color.Green);
+										//DrawSphere(average_point, 1.0f, Color.Black);
+										//DrawLine3D(average_point, average_point + plane_normal * 10.0f, Color.Magenta);
+										//DrawLine3D(average_point, average_point + plane_right * 10.0f, Color.SkyBlue);
+										//DrawLine3D(average_point, average_point + plane_up * 10.0f, Color.Green);
 										Vector3 new_u_axis = from_map(face.UAxis) / face.XScale;
 										Vector3 new_v_axis = from_map(face.VAxis) / face.YScale;
 										{
@@ -184,13 +184,13 @@ namespace sledge_test
 										DrawLine3D(texture_space_center, texture_space_center + texture_space_up * 10.0f, Color.Green);
 
 										// I can construct a plane in texture space and then use that to map 2d texture space coordinates (on the plane) to 3d texture space then to model space
-										
+
 										Vector3 texture_plane_vert0 = model_to_texture_space.Transform(from_map(face.Vertices[0]));
 										Vector3 texture_plane_vert1 = model_to_texture_space.Transform(from_map(face.Vertices[1]));
 										Vector3 texture_plane_vert2 = model_to_texture_space.Transform(from_map(face.Vertices[2]));
 
 										float dot_with_plane_normal = (texture_plane_vert1 - texture_plane_vert0).Cross(texture_plane_vert2 - texture_plane_vert0).Y;
-										if(dot_with_plane_normal < 0)
+										if (dot_with_plane_normal < 0)
 										{
 											texture_plane_vert0 = model_to_texture_space.Transform(from_map(face.Vertices[0]));
 											texture_plane_vert1 = model_to_texture_space.Transform(from_map(face.Vertices[2]));
@@ -297,7 +297,7 @@ namespace sledge_test
 											uv_texts.Add(new UVText() { u = texture_space.X, v = texture_space.Y, draw_pos = GetWorldToScreen(model_space, camera), plane_x = plane_x, plane_y = plane_y });
 										};
 
-									
+
 
 										Vector3 texture_on_plane_center = texture_plane_center_in_model_space;
 
@@ -312,15 +312,15 @@ namespace sledge_test
 
 										PathsD quad_paths = new PathsD();
 
-										for(int x = 0; x < (int)texture_plane_aabb_size.X; x++)
+										for (int x = 0; x < (int)texture_plane_aabb_size.X; x++)
 										{
 											for (int y = 0; y < (int)texture_plane_aabb_size.Y; y++)
 											{
 												quad_paths.Clear();
 												var grid_bottom_left = grid_pos(x, y);
-												var grid_bottom_right = grid_pos(x+1, y);
-												var grid_top_left = grid_pos(x, y+1);
-												var grid_top_right = grid_pos(x+1, y+1);
+												var grid_bottom_right = grid_pos(x + 1, y);
+												var grid_top_left = grid_pos(x, y + 1);
+												var grid_top_right = grid_pos(x + 1, y + 1);
 												quad_paths.Add(Clipper.MakePath(new double[] { grid_bottom_left.X, grid_bottom_left.Y, grid_top_left.X, grid_top_left.Y, grid_top_right.X, grid_top_right.Y, grid_bottom_right.X, grid_bottom_right.Y }));
 												PathsD solution = Clipper.Intersect(quad_paths, face_paths, FillRule.NonZero);
 												foreach (PathD path in solution)

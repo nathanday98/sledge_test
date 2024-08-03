@@ -1,3 +1,7 @@
 ﻿.vs
 sledge_test/bin
 sledge_test/obj
+sledge_map_loader/bin
+native_test/x64
+sledge_map_loader/obj
+x64
