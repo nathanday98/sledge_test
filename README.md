@@ -1,0 +1,1 @@
+This is just a project where I tried to reverse engineer the UV-mapping logic of trenchbroom levels. The goal was to replace the UV-mapped geometry with a bunch of quads that were actually Adobe Flash Vector Art rendered in 3D using the loop-blinn method for infinite resolution. I used C# for this because it's my goto language for prototyping. 
